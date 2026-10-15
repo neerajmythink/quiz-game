@@ -95,14 +95,38 @@
         font-weight: 800;
       }
 
-      .sound-button:hover {
+      .audio-controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .sound-button:hover,
+      .track-button:hover {
         border-color: #d6c7aa;
       }
 
       .sound-button:focus-visible,
+      .track-button:focus-visible,
       button:focus-visible {
         outline: 4px solid #253b5470;
         outline-offset: 3px;
+      }
+
+      .track-button {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        gap: 7px;
+        padding: 0 12px;
+        border: 2px solid #efe6d6;
+        border-radius: 15px;
+        background: #fffefa;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 0.84rem;
+        font-weight: 800;
       }
 
       main {
@@ -629,7 +653,13 @@
         }
 
         .topbar {
+          flex-wrap: wrap;
           margin-bottom: 14px;
+        }
+
+        .audio-controls {
+          width: 100%;
+          justify-content: flex-end;
         }
 
         main {
@@ -718,10 +748,17 @@
           <span class="brand-mark" aria-hidden="true">🌱</span>
           <span>Little Learners</span>
         </a>
-        <button class="sound-button" id="sound-button" type="button" aria-pressed="true">
-          <span id="sound-icon" aria-hidden="true">🎵</span>
-          <span id="sound-label">Music on</span>
-        </button>
+        <div class="audio-controls" aria-label="Music controls">
+          <button class="track-button" id="track-button" type="button" aria-label="Change music tune">
+            <span aria-hidden="true">🎼</span>
+            <span id="track-label">Sunny Steps</span>
+            <span aria-hidden="true">↻</span>
+          </button>
+          <button class="sound-button" id="sound-button" type="button" aria-pressed="true">
+            <span id="sound-icon" aria-hidden="true">🎵</span>
+            <span id="sound-label">Music on</span>
+          </button>
+        </div>
       </header>
 
       <main>
@@ -867,12 +904,33 @@
       ];
       const roundLength = 10;
       const cheers = ["Great job!", "You got it!", "Hooray!", "Fantastic!", "That’s right!"];
+      const musicTracks = [
+        {
+          name: "Sunny Steps",
+          melody: [72, 76, 79, 76, 74, 79, null, 79, 72, 76, 79, 81, 79, null, 74, 72],
+          bass: [48, 55, 53, 55],
+          tempo: 520,
+        },
+        {
+          name: "Moonbeam Waltz",
+          melody: [69, 72, 76, 72, 71, 74, 78, 74, 69, 72, 76, 79, 76, null, 72, 69],
+          bass: [45, 52, 50, 52],
+          tempo: 620,
+        },
+        {
+          name: "Bouncy Bubbles",
+          melody: [76, 79, 83, 79, 76, null, 81, 83, 84, 83, 81, null, 79, 76, 72, 76],
+          bass: [48, 55, 60, 55],
+          tempo: 440,
+        },
+      ];
       let roundPictures = [];
       let roundIndex = 0;
       let score = 0;
       let answered = false;
       let soundEnabled = true;
       let gameMode = "english";
+      let musicTrackIndex = 0;
       let audioContext;
       let musicTimer;
       let musicStep = 0;
@@ -887,6 +945,8 @@
       const feedback = document.querySelector("#feedback");
       const nextButton = document.querySelector("#next-button");
       const soundButton = document.querySelector("#sound-button");
+      const trackButton = document.querySelector("#track-button");
+      const trackLabel = document.querySelector("#track-label");
       const questionElement = document.querySelector("#question");
       const musicNote = document.querySelector("#music-note");
 
@@ -920,11 +980,11 @@
       }
 
       function playMusicStep() {
-        const melody = [72, 76, 79, 76, 74, 79, null, 79, 72, 76, 79, 81, 79, null, 74, 72];
-        const note = melody[musicStep % melody.length];
-        if (note !== null) playSequence([note], 0, 0.022, 0.42);
+        const track = musicTracks[musicTrackIndex];
+        const note = track.melody[musicStep % track.melody.length];
+        if (note !== null) playSequence([note], 0, 0.022, track.tempo / 1500);
         if (musicStep % 4 === 0) {
-          const bass = [48, 55, 53, 55][Math.floor(musicStep / 4) % 4];
+          const bass = track.bass[Math.floor(musicStep / 4) % track.bass.length];
           playSequence([bass], 0, 0.009, 0.72);
         }
         musicStep += 1;
@@ -950,7 +1010,20 @@
         if (!musicTimer) {
           musicStep = 0;
           playMusicStep();
-          musicTimer = window.setInterval(playMusicStep, 520);
+          musicTimer = window.setInterval(playMusicStep, musicTracks[musicTrackIndex].tempo);
+        }
+      }
+
+      function selectNextTrack() {
+        musicTrackIndex = (musicTrackIndex + 1) % musicTracks.length;
+        const track = musicTracks[musicTrackIndex];
+        trackLabel.textContent = track.name;
+        trackButton.setAttribute("aria-label", `Change music tune. Current tune: ${track.name}`);
+        if (musicTimer) {
+          window.clearInterval(musicTimer);
+          musicStep = 0;
+          playMusicStep();
+          musicTimer = window.setInterval(playMusicStep, track.tempo);
         }
       }
 
@@ -1137,6 +1210,7 @@
         showLanding();
       });
       nextButton.addEventListener("click", advanceRound);
+      trackButton.addEventListener("click", selectNextTrack);
       soundButton.addEventListener("click", async () => {
         soundEnabled = !soundEnabled;
         soundButton.setAttribute("aria-pressed", String(soundEnabled));
