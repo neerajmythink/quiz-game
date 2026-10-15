@@ -24,6 +24,25 @@ const hindiPictures = [
   ["म", "मछली", "🐟"], ["र", "रथ", "🛺"], ["ल", "लड्डू", "🍡"], ["ह", "हाथी", "🐘"],
 ].map(([letter, word, emoji]) => ({ letter, word, emoji }));
 
+const spellingWords = [
+  { word: "cat", emoji: "🐱", missingIndex: 1, choices: ["a", "e", "i"] },
+  { word: "dog", emoji: "🐶", missingIndex: 1, choices: ["o", "a", "i"] },
+  { word: "sun", emoji: "☀️", missingIndex: 1, choices: ["u", "a", "e"] },
+  { word: "bus", emoji: "🚌", missingIndex: 1, choices: ["u", "a", "i"] },
+  { word: "hat", emoji: "👒", missingIndex: 1, choices: ["a", "e", "i"] },
+  { word: "hen", emoji: "🐔", missingIndex: 1, choices: ["e", "a", "i"] },
+  { word: "pig", emoji: "🐷", missingIndex: 1, choices: ["i", "e", "o"] },
+  { word: "cup", emoji: "🥤", missingIndex: 1, choices: ["u", "a", "o"] },
+  { word: "bed", emoji: "🛏️", missingIndex: 1, choices: ["e", "a", "i"] },
+  { word: "fox", emoji: "🦊", missingIndex: 1, choices: ["o", "a", "e"] },
+  { word: "jam", emoji: "🍯", missingIndex: 1, choices: ["a", "e", "i"] },
+  { word: "map", emoji: "🗺️", missingIndex: 1, choices: ["a", "e", "o"] },
+  { word: "pen", emoji: "🖊️", missingIndex: 1, choices: ["e", "a", "i"] },
+  { word: "leg", emoji: "🦵", missingIndex: 1, choices: ["e", "a", "i"] },
+  { word: "pot", emoji: "🍲", missingIndex: 1, choices: ["o", "a", "u"] },
+  { word: "nut", emoji: "🥜", missingIndex: 1, choices: ["u", "a", "i"] },
+];
+
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const cheers = ["Great job!", "You got it!", "Hooray!", "Fantastic!", "That’s right!"];
 const roundsPerGame = 10;
@@ -44,6 +63,9 @@ const shuffle = (items) => {
 };
 
 function makeRounds(mode) {
+  if (mode === "english-spell") {
+    return shuffle(spellingWords).slice(0, roundsPerGame);
+  }
   if (mode === "english-order") {
     return Array.from({ length: roundsPerGame }, () => {
       const index = Math.floor(Math.random() * (alphabet.length - 2)) + 1;
@@ -58,11 +80,17 @@ function makeRounds(mode) {
 
 function makeChoices(mode, current) {
   const isCase = mode === "english-case";
-  const answer = mode === "math" ? String(current.count) : isCase ? current.letter.toLowerCase() : current.letter;
+  const answer = mode === "math"
+    ? String(current.count)
+    : mode === "english-spell"
+      ? current.word[current.missingIndex]
+      : isCase ? current.letter.toLowerCase() : current.letter;
   let distractors;
   if (mode === "math") {
     distractors = shuffle(Array.from({ length: 10 }, (_, index) => String(index + 1))
       .filter((number) => number !== answer)).slice(0, 2);
+  } else if (mode === "english-spell") {
+    distractors = current.choices.filter((letter) => letter !== answer);
   } else if (isCase) {
     distractors = shuffle(alphabet.map((letter) => letter.toLowerCase())
       .filter((letter) => letter !== answer)).slice(0, 2);
@@ -153,6 +181,7 @@ function App() {
   const isEnglish = mode.startsWith("english");
   const isEnglishCase = mode === "english-case";
   const isEnglishOrder = mode === "english-order";
+  const isEnglishSpelling = mode === "english-spell";
 
   function playFeedback(notes, options) {
     if (!soundEnabled || audioRef.current?.state !== "running") return;
@@ -245,7 +274,9 @@ function App() {
         ? `शाबाश! ${current.word}, ${current.letter} से शुरू होता है!`
         : mode === "english-case"
           ? `You got it! ${current.letter} and ${current.letter.toLowerCase()} are a pair!`
-          : mode === "english-order"
+          : mode === "english-spell"
+            ? `Great spelling! You made the word ${current.word}!`
+            : mode === "english-order"
             ? `Great job! ${current.letter} comes next!`
             : `${cheers[Math.floor(Math.random() * cheers.length)]} ${current.word} starts with ${current.letter}!`);
     playFeedback([72, 76, 79, 84], { spacing: 0.11, volume: 0.05, duration: 0.34 });
@@ -293,6 +324,15 @@ function App() {
   } else if (current && mode === "hindi") {
     promptContent = current.emoji;
     question = "यह किस अक्षर से शुरू होता है?";
+  } else if (current && isEnglishSpelling) {
+    promptContent = current.emoji;
+    pictureName = current.word.split("").map((letter, index) => (
+      index === current.missingIndex
+        ? <span className="spelling-gap" key={index}>_</span>
+        : <span key={index}>{letter}</span>
+    ));
+    pictureLabel = `${current.word.slice(0, current.missingIndex)} missing letter ${current.word.slice(current.missingIndex + 1)}`;
+    question = "Which letter completes the word?";
   } else if (current && isEnglishCase) {
     promptContent = current.letter;
     pictureName = "Big letter";
@@ -370,6 +410,7 @@ function App() {
                 <SubjectCard icon="🍎" name="Picture letters" description="Find the first letter" tone="english" onClick={() => startGame("english-picture")} />
                 <SubjectCard icon="Aa" name="Big & little" description="Match A with a" tone="case-game" onClick={() => startGame("english-case")} />
                 <SubjectCard icon="🔠" name="ABC order" description="Fill the missing letter" tone="order-game" onClick={() => startGame("english-order")} />
+                <SubjectCard icon="🧩" name="Missing letter" description="Spell a little word" tone="spelling-game" onClick={() => startGame("english-spell")} />
               </div>
             </div>
           )}
@@ -390,7 +431,7 @@ function App() {
                 <div className={`picture${mode === "math" ? " counting" : ""}${isEnglishOrder ? " letter-sequence" : ""}`} role="img" aria-label={pictureLabel} lang={mode === "hindi" ? "hi" : undefined}>
                   {promptContent}
                 </div>
-                <p className="picture-name" lang={mode === "hindi" ? "hi" : undefined}>{pictureName}</p>
+                <p className={`picture-name${isEnglishSpelling ? " spelling-word" : ""}`} lang={mode === "hindi" ? "hi" : undefined}>{pictureName}</p>
               </div>
               <p className="question" lang={mode === "hindi" ? "hi" : undefined}>{question}</p>
               {musicError && <p className="music-note" role="status">{musicError}</p>}
@@ -415,7 +456,7 @@ function App() {
               <p className={`feedback${feedback && wrongOptions.length ? " try-again" : ""}`} aria-live="assertive">{feedback}</p>
               {answered && (
                 <button className="primary-button next-button" type="button" onClick={advanceRound} ref={nextButtonRef}>
-                  {round === roundsPerGame - 1 ? "See my stars ★" : "Next picture →"}
+                  {round === roundsPerGame - 1 ? "See my stars ★" : isEnglishSpelling ? "Next word →" : "Next picture →"}
                 </button>
               )}
               {answered && <Celebration id={celebrationId} />}
@@ -430,7 +471,8 @@ function App() {
               <p className="subtitle">
                 {mode === "math" ? "You counted all the fun things. Great job, little learner!"
                   : mode === "hindi" ? "तुमने सारे अक्षर पहचान लिए! शाबाश!"
-                    : "You found letters for all the pictures. Great job, little learner!"}
+                    : mode === "english-spell" ? "You spelled lots of little words. Great job, little learner!"
+                      : "You found letters for all the pictures. Great job, little learner!"}
               </p>
               <Celebration id={celebrationId} />
               <p className="finish-score">You earned {score} {score === 1 ? "star" : "stars"}!</p>
