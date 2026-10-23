@@ -24,6 +24,24 @@ Open the **Local** URL printed by Vite (usually `http://localhost:5173/`) in a
 browser. Keep the terminal running while developing; Vite refreshes the page
 when source files change.
 
+### Troubleshooting npm install
+
+If installation stops with an `EACCES` or `EEXIST` error mentioning npm's cache,
+the cache may contain files your account cannot update. The later
+`vite: command not found` message means the install did not finish, so the
+development server cannot start yet.
+
+Retry with a separate cache directory instead of forcing an overwrite or
+changing permissions on the shared npm cache:
+
+```sh
+npm ci --cache /tmp/little-learners-npm-cache
+npm run dev
+```
+
+If npm reports a different error, check the first error in its output; the Vite
+message may only be a consequence of the failed install.
+
 ## Available commands
 
 | Command | Description |
