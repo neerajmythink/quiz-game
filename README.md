@@ -2,7 +2,8 @@
 
 Little Learners is a browser-based learning game for young children. It is built
 with React and Vite and includes English letter games, a counting game, Hindi
-letter recognition, animated feedback, and optional background music.
+letter recognition, subject-themed picture puzzles, a step-by-step cooking game,
+animated feedback, and optional background music.
 
 ## Requirements
 
@@ -54,17 +55,28 @@ npm run preview
 ## Activities
 
 - **English:** picture-letter matching, uppercase/lowercase matching, ABC order,
-  and missing-letter spelling.
-- **Math:** count pictured objects and choose the matching number.
-- **Hindi:** identify the first Hindi letter for a pictured word.
+  missing-letter spelling, and an ABC picture puzzle.
+- **Math:** count pictured objects, choose the matching number, and assemble a
+  number picture puzzle.
+- **Hindi:** identify the first Hindi letter for a pictured word and assemble a
+  Hindi picture puzzle.
+- **Cooking:** make pizza, berry ice cream, or roti by following recipe steps
+  and adding ingredients.
+
+In each picture puzzle, tap a piece and then tap its matching space to assemble
+the picture. The puzzle hints support young learners and touch screens.
+
+In the cooking game, drag an ingredient onto the cooking spot, or tap an
+ingredient and then the spot on touch devices. Recipes guide kids through the
+ingredients in order before they finish cooking or serve the dish.
 
 ## Adding or changing an activity
 
 Game screens and round logic are maintained in `src/App.jsx`. When adding a
-game, update its activity card, round generation, answer choices, question
-prompt, and feedback as needed. Reuse the existing quiz state and feedback flow
-so progress, retry behavior, scoring, and celebrations stay consistent. Add
-activity-specific styles to `src/styles.css`.
+quiz, update its activity card, round generation, answer choices, question
+prompt, and feedback as needed. Picture puzzle boards are defined in
+`picturePuzzles`; keep each board's piece order aligned with its target spaces.
+Add activity-specific styles to `src/styles.css`.
 
 ## Music and accessibility
 
